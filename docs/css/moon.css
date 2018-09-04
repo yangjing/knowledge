@@ -1,0 +1,8 @@
+slides > slide .slide-wrapper {
+    max-width: 1440px !important;
+}
+
+table td, table th {
+    padding: 0.5em 0.1em;
+    line-height: 1.2;
+}

@@ -1,0 +1,1110 @@
+<!--
+    Powered By nodeppt - This is probably the best web presentation tool so far!
+    version: 1.4.5
+    site: https://github.com/ksky521/nodeppt
+    date: 
+-->
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>使用PostgreSQL - By 杨景（羊八井）</title>
+    <link rel="stylesheet" media="all" href="./css/nodeppt.css">
+    <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="./css/phone.css">
+    
+    <link rel="stylesheet" href="./js/highlight/styles/monokai_sublime.css">
+    <link rel="stylesheet" href="./css/font-awesome.css">
+    
+<link rel="stylesheet" href="./css/theme.moon.css">
+</head>
+<body>
+<div class="slides">
+    <slides id="container">
+        <slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>使用PostgreSQL</h1>
+<h2>分享人：杨景</h2>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>PostgreSQL特性</h1>
+<ul>
+<li><strong>表分区</strong></li>
+<li><strong>逻辑复制</strong></li>
+<li><strong>并行查询</strong></li>
+<li><strong>查询JIT编译</strong></li>
+<li><strong>丰富的数据类型</strong>：数组、JSON、XML、Hstore、network address、point、geometric等</li>
+<li><strong>用户自定义数据类型</strong></li>
+<li><strong>丰富的数据索引类型</strong></li>
+<li><strong>Common Table Expressions</strong>：通用表表达式和递归</li>
+<li><strong>物化视图</strong>：物化视图就像普通视图那样代表一个经常使用的查询结果集，只是结果集像一个普通表那样存储在磁盘上。物化视图也可以添加索引，不像普通视图每次请求时重新生成，物化视图是及时的快照。</li>
+<li><strong>FDW</strong>：Forerign Data Wrappers，外部数据包装。可通过PostgreSQL访问其它关系型数据库，如：MySQL、Oracle、MS SQL Server等（也可以访问其它Postgres数据库实例。同时，还能访问NoSQL和文件存储，如：HBase、Cassandra、MongoDB、Redis、CSV/Text、JSON等</li>
+<li>……</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>数值类型</h1>
+<table>
+<thead>
+<tr>
+<th>名字</th>
+<th>存储尺寸</th>
+<th>描述</th>
+<th>范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>smallint</td>
+<td>2字节</td>
+<td>小范围整数</td>
+<td>-32768 to +32767</td>
+</tr>
+<tr>
+<td>integer</td>
+<td>4字节</td>
+<td>整数的典型选择</td>
+<td>-2147483648 to +2147483647</td>
+</tr>
+<tr>
+<td>bigint</td>
+<td>8字节</td>
+<td>大范围整数</td>
+<td>-9223372036854775808 to +9223372036854775807</td>
+</tr>
+<tr>
+<td>numeric</td>
+<td>可变</td>
+<td>用户指定精度，精确</td>
+<td>最高小数点前131072位，以及小数点后16383位</td>
+</tr>
+<tr>
+<td>real, float4</td>
+<td>4字节</td>
+<td>可变精度，不精确</td>
+<td>6位十进制精度</td>
+</tr>
+<tr>
+<td>double precision, float8</td>
+<td>8字节</td>
+<td>可变精度，不精确</td>
+<td>15位十进制精度</td>
+</tr>
+<tr>
+<td>serial</td>
+<td>4字节</td>
+<td>自动增加的整数</td>
+<td>1到2147483647</td>
+</tr>
+<tr>
+<td>bigserial</td>
+<td>8字节</td>
+<td>自动增长的大整数</td>
+<td>1到9223372036854775807</td>
+</tr>
+</tbody>
+</table>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>字符/二进制类型</h1>
+<table>
+<thead>
+<tr>
+<th>名字</th>
+<th>存储尺寸</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>varchar(n)</td>
+<td></td>
+<td>有限制的变长</td>
+</tr>
+<tr>
+<td>char(n)</td>
+<td></td>
+<td>定长</td>
+</tr>
+<tr>
+<td>text</td>
+<td></td>
+<td>无限变长</td>
+</tr>
+<tr>
+<td>bytea</td>
+<td>1或4字节外加真正的二进制串</td>
+<td>变长二进制串</td>
+</tr>
+</tbody>
+</table>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>日期、时间类型</h1>
+<table>
+<thead>
+<tr>
+<th>名字</th>
+<th>存储尺寸</th>
+<th>描述</th>
+<th>最小值</th>
+<th>最大值</th>
+<th>解析度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>timestamp [(p)] [without time zone]</td>
+<td>8字节</td>
+<td>包括日期和时间（无时区）</td>
+<td>4713 BC</td>
+<td>294276 AD</td>
+<td>1微秒/14位</td>
+</tr>
+<tr>
+<td>timestamp [(p)] with time zone</td>
+<td>8字节</td>
+<td>包括日期和时间，有时区</td>
+<td>4713 BC</td>
+<td>294276 AD</td>
+<td>1微秒/14位</td>
+</tr>
+<tr>
+<td>date</td>
+<td>4字节</td>
+<td>日期（没有一天中的时间）</td>
+<td>4713 BC</td>
+<td>5874897 AD</td>
+<td>1日</td>
+</tr>
+<tr>
+<td>time [(p)] [without time zone ]</td>
+<td>8字节</td>
+<td>一天中的时间（无日期）</td>
+<td>00:00:00</td>
+<td>24:00:00</td>
+<td>1微秒/14位</td>
+</tr>
+<tr>
+<td>time [(p)] with time zone</td>
+<td>12字节</td>
+<td>一天中的时间（不带日期），带有时区</td>
+<td>00:00:00+1459</td>
+<td>24:00:00-1459</td>
+<td>1微秒/14位</td>
+</tr>
+<tr>
+<td>interval [fields] [(p)]</td>
+<td>16字节</td>
+<td>时间间隔</td>
+<td>-178000000年</td>
+<td>178000000年</td>
+<td>1微秒/14位</td>
+</tr>
+</tbody>
+</table>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>JSON类型</h1>
+<ul>
+<li>JSON 基本类型和相应的PostgreSQL类型</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>JSON</th>
+<th>基本类型</th>
+<th>PostgreSQL类型    注释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>string</td>
+<td>text</td>
+<td>不允许\u0000，如果数据库编码不是 UTF8，非 ASCII Unicode 转义也是这样</td>
+</tr>
+<tr>
+<td>number</td>
+<td>numeric</td>
+<td>不允许NaN 和 infinity值</td>
+</tr>
+<tr>
+<td>boolean</td>
+<td>boolean</td>
+<td>只接受小写true和false拼写</td>
+</tr>
+<tr>
+<td>null</td>
+<td>(无)</td>
+<td>SQL NULL是一个不同的概念</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><em>示例</em></li>
+</ul>
+<pre><code class="sql">select &#39;[1, 2, &quot;foo&quot;, null]&#39;::jsonb;
+select &#39;{&quot;foo&quot;: [true, &quot;bar&quot;], &quot;tags&quot;: {&quot;a&quot;: 1, &quot;b&quot;: null}}&#39;::jsonb;
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>JSON类型</h1>
+<h2>jsonb与json</h2>
+<ul>
+<li>当一个 json 值被输入并且接着不做任何附加处理就输出时，json会输出和输入完全相同的文本，而jsonb则不会保留语义上没有意义的细节（例如空格）。例如，注意下面的不同：</li>
+</ul>
+<pre><code class="sql">SELECT &#39;{&quot;bar&quot;:    &quot;   baz&quot;, &quot;balance&quot;:    7.77,     &quot;active&quot;:false}&#39;::json;
+-------------------------------------------------
+{&quot;bar&quot;:    &quot;   baz&quot;, &quot;balance&quot;:    7.77,     &quot;active&quot;:false}
+(1 row)
+
+SELECT &#39;{&quot;bar&quot;:    &quot;   baz&quot;, &quot;balance&quot;:    7.77,     &quot;active&quot;:false}&#39;::jsonb;
+--------------------------------------------------
+{&quot;bar&quot;: &quot;   baz&quot;, &quot;active&quot;: false, &quot;balance&quot;: 7.77}
+(1 row)
+</code></pre>
+<ul>
+<li>值得一提的一种语义上无意义的细节是，在jsonb中数据会被按照底层 numeric类型的行为来打印。实际上，这意味着用E记号 输入的数字被打印出来时就不会有该记号，例如：</li>
+</ul>
+<pre><code class="sql">SELECT &#39;{&quot;reading&quot;: 1.230e-5}&#39;::json, &#39;{&quot;reading&quot;: 1.230e-5}&#39;::jsonb;
+         json          |          jsonb
+-----------------------+-------------------------
+ {&quot;reading&quot;: 1.230e-5} | {&quot;reading&quot;: 0.00001230}
+(1 row)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>XML类型</h1>
+<ul>
+<li>通过xmlparse函数从字符数据中生成一个xml类型</li>
+</ul>
+<pre><code class="sql">select XMLPARSE (DOCUMENT &#39;&lt;?xml version=&quot;1.0&quot;?&gt;&lt;book&gt;&lt;title&gt;Manual&lt;/title&gt;&lt;chapter&gt;...&lt;/chapter&gt;&lt;/book&gt;&#39;);
+select XMLPARSE (CONTENT &#39;abc&lt;foo&gt;bar&lt;/foo&gt;&lt;bar&gt;foo&lt;/bar&gt;&#39;);
+select &#39;&lt;foo&gt;bar&lt;/foo&gt;&#39;::xml;
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>其它类型</h1>
+<table>
+<thead>
+<tr>
+<th>名字</th>
+<th>存储尺寸</th>
+<th>描述</th>
+<th>范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>money</td>
+<td>8字节</td>
+<td>货币额</td>
+<td>-92233720368547758.08到+92233720368547758.07</td>
+</tr>
+<tr>
+<td>bool</td>
+<td>1字节</td>
+<td>状态为真或假</td>
+<td></td>
+</tr>
+<tr>
+<td>enum</td>
+<td></td>
+<td>通过 create type mood as enum(&#39;sad&#39;, &#39;ok&#39;, &#39;happy&#39;); 创建枚举类型</td>
+<td></td>
+</tr>
+<tr>
+<td>cidr</td>
+<td>7或19字节</td>
+<td>IPv4和IPv6网络</td>
+<td></td>
+</tr>
+<tr>
+<td>inet</td>
+<td>7或19字节</td>
+<td>IPv4和IPv6主机以及网络</td>
+<td></td>
+</tr>
+<tr>
+<td>macaddr</td>
+<td>6字节</td>
+<td>MAC地址</td>
+<td></td>
+</tr>
+<tr>
+<td>macaddr8</td>
+<td>8字节</td>
+<td>MAC 地址 (EUI-64 格式)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>PostgreSQL安装</h1>
+<ul>
+<li>Docker</li>
+<li>二进制安装包：Linux、Windows、Mac</li>
+<li>Linux软件仓库：Yum/dnf、Apt</li>
+<li>第三方软件包：BigSQL（<a href="https://www.openscg.com/）" target="_blank">https://www.openscg.com/）</a></li>
+<li>源码编译</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>使用Docker安装PostgreSQL</h1>
+<h2>Dockerfile</h2>
+<ul>
+<li>Docker脚本，设置系统默认字符集为<code>zh_CN.UTF-8</code></li>
+</ul>
+<pre><code class="dockerfile">FROM postgres:10.4
+
+RUN localedef -i zh_CN -c -f UTF-8 -A /usr/share/locale/locale.alias zh_CN.UTF-8
+
+ENV LANG zh_CN.utf8
+ENV TZ Asia/Shanghai
+
+COPY init.sql /docker-entrypoint-initdb.d/
+</code></pre>
+<ul>
+<li>使用Docker在开发环境运行Postgres是一个很好的方案，可以统一团队成员的数据库版本及运行环境。</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>使用Docker安装PostgreSQL</h1>
+<h2>init.sql</h2>
+<ul>
+<li>数据库初始化脚本，<code>docker run</code>时执行些数据库初始化工作。</li>
+</ul>
+<pre><code class="sql">create user massdata with nosuperuser replication encrypted password &#39;Massdata.2018&#39;;
+create database massdata owner = massdata template = template0 encoding = &#39;UTF-8&#39; 
+  lc_ctype = &#39;zh_CN.UTF-8&#39; lc_collate = &#39;zh_CN.UTF-8&#39;;
+\c massdata;
+create extension adminpack;
+create extension hstore;
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>使用Docker安装PostgreSQL</h1>
+<h2>Build &amp; Run</h2>
+<pre><code class="sh">$ docker build -t postgres-10-dev .
+$ docker run -h postgres-10-dev -p 5432:5432 --name=postgres-10-dev -d postgres-10-dev
+</code></pre>
+<h2>登录数据库</h2>
+<pre><code class="sh">$ docker run -it --rm --link=postgres-10-dev postgres-10-dev \
+  psql -h postgres-10-dev -d massdata -U massdata
+psql (10.4 (Debian 10.4-2.pgdg90+1))
+Type &quot;help&quot; for help.
+
+massdata=&gt;
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>DDL</h1>
+<ul>
+<li>创建表</li>
+</ul>
+<pre><code class="sql">create table t_book(
+  id serial primary key,
+  isbn varchar(64) not null,
+  title varchar(255) not null,
+  authors text[] not null,
+  created_at timestamptz
+);
+</code></pre>
+<ul>
+<li>创建索引</li>
+</ul>
+<pre><code class="sql">create unique index t_book_isbn_idx on t_book(title);
+</code></pre>
+<ul>
+<li>添加列</li>
+</ul>
+<pre><code class="sql">alter table t_book add column description text null;
+</code></pre>
+<ul>
+<li>查看表定义：<code>\d t_book;</code></li>
+</ul>
+<pre><code class="sql">massdata=&gt; \d t_book;
+                                       Table &quot;public.t_book&quot;
+   Column    |           Type           | Collation | Nullable |              Default               
+-------------+--------------------------+-----------+----------+------------------------------------
+ id          | integer                  |           | not null | nextval(&#39;t_book_id_seq&#39;::regclass)
+ isbn        | character varying(64)    |           | not null | 
+ title       | character varying(255)   |           | not null | 
+ authors     | text[]                   |           | not null | 
+ created_at  | timestamp with time zone |           |          | 
+ description | text                     |           |          | 
+Indexes:
+    &quot;t_book_pkey&quot; PRIMARY KEY, btree (id)
+    &quot;t_book_isbn_idx&quot; UNIQUE, btree (title)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>查询</h1>
+<pre><code class="sql">massdata=&gt; select id, isbn, title, authors from t_book;
+ id |       isbn        |             title              |                    authors                    
+----+-------------------+--------------------------------+-----------------------------------------------
+  1 | 978-7-115-48356-0 | Scala实用指南                  | {文卡特·苏帕拉马尼亚姆}
+  2 | 9787111370048     | Java并发编程                   | {&quot;Brian Goetz&quot;,&quot;Time Peierls&quot;,&quot;Joshua Bloch&quot;}
+  3 | 9787111255833     | Effective Java中文版（第二版） | {&quot;joshua Bloch&quot;}
+(3 rows)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>数组字段的查询</h1>
+<ul>
+<li>查找作者 <strong>Joshua Bloch</strong> 写的所有书籍。</li>
+</ul>
+<pre><code class="sql">massdata=&gt; select id, isbn, title, authors from t_book
+massdata-&gt; where &#39;Joshua Bloch&#39; like any(authors);
+ id |     isbn      |             title              |     authors      
+----+---------------+--------------------------------+------------------
+  3 | 9787111255833 | Effective Java中文版（第二版） | {&quot;joshua Bloch&quot;}
+(1 row)
+</code></pre>
+<ul>
+<li>通过<code>any</code>函数来匹配数组内的任一个元素。</li>
+<li><em>因为大小写问题，作者 <strong>Joshua Bloch</strong> 的书只找到一本。</em></li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>数组字段的查询</h1>
+<ul>
+<li>通过 <code>unnest</code> 函数将数组字段值转换成表数据记录</li>
+</ul>
+<pre><code class="sql">massdata=&gt; select p.id, p.isbn, p.title, p.authors from
+massdata-&gt; (select *, unnest(authors) as author from t_book) p
+massdata-&gt; where p.author like &#39;%Bloch&#39;;
+ id |     isbn      |             title              |                    authors                    
+----+---------------+--------------------------------+-----------------------------------------------
+  2 | 9787111370048 | Java并发编程                   | {&quot;Brian Goetz&quot;,&quot;Time Peierls&quot;,&quot;Joshua Bloch&quot;}
+  3 | 9787111255833 | Effective Java中文版（第二版） | {&quot;joshua Bloch&quot;}
+(2 rows)
+</code></pre>
+<ul>
+<li>通过 <code>ilike</code> 操作符来进行忽略大小写的字符比较</li>
+</ul>
+<pre><code class="sql">massdata=&gt; select id, isbn, title, authors from t_book
+massdata-&gt; where &#39;joshua Bloch&#39; ilike any(authors);
+ id |     isbn      |             title              |                    authors                    
+----+---------------+--------------------------------+-----------------------------------------------
+  2 | 9787111370048 | Java并发编程                   | {&quot;Brian Goetz&quot;,&quot;Time Peierls&quot;,&quot;Joshua Bloch&quot;}
+  3 | 9787111255833 | Effective Java中文版（第二版） | {&quot;joshua Bloch&quot;}
+(2 rows)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>JSON</h1>
+<ul>
+<li>创建 <code>t_user</code> 用户表</li>
+</ul>
+<pre><code class="sql">create table t_user(
+  id bigserial primary key,
+  username varchar(255) not null,
+  attrs jsonb not null default &#39;{}&#39;,
+  created_at timestamptz not null default now()
+);
+create unique index t_user_username_uidx on t_user(username);
+</code></pre>
+<ul>
+<li>JSON字段的插入</li>
+</ul>
+<pre><code class="sql">insert into t_user(username, attrs) values
+(&#39;yangbajing&#39;, &#39;{&quot;nickname&quot;:&quot;羊八井&quot;,&quot;age&quot;:32,&quot;email&quot;:&quot;yangbajing@gmail.com&quot;, &quot;contacts&quot;:[{&quot;city&quot;:&quot;重庆&quot;,&quot;address&quot;:&quot;渝北区金开大道西段106号10栋移动新媒体产业大厦11楼&quot;}]}&#39;),
+(&#39;yangjing&#39;, &#39;{&quot;nickname&quot;:&quot;杨景&quot;,&quot;age&quot;:32}&#39;),
+(&#39;yangjiajiang&#39;, &#39;{&quot;nickname&quot;:&quot;杨家将&quot;,&quot;age&quot;:32, &quot;contacts&quot;:[{&quot;city&quot;:&quot;江津&quot;,&quot;address&quot;:&quot;重庆市江津区南门路&quot;}]}&#39;);
+</code></pre>
+<ul>
+<li>查询</li>
+</ul>
+<pre><code class="sql">massdata=&gt; select * from t_user;
+ id |  username  |                                                                               attrs                                                                                |          created_at
+
+----+------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------
+-------
+  2 | yangjing   | {&quot;age&quot;: 32, &quot;nickname&quot;: &quot;杨景&quot;}                                                                                                                                    | 2018-09-03 12:00:42.274
+754+00
+  1 | yangbajing | {&quot;age&quot;: 33, &quot;email&quot;: &quot;yangbajing@gmail.com&quot;, &quot;contacts&quot;: [{&quot;city&quot;: &quot;重庆&quot;, &quot;address&quot;: &quot;渝北区金开大道西段106号10栋移动新媒体产业大厦11楼&quot;}], &quot;nickname&quot;: &quot;羊八井&quot;} | 2018-09-03 12:00:42.274
+754+00
+  3 | yangjiajiang | {&quot;age&quot;: 32, &quot;contacts&quot;: [{&quot;city&quot;: &quot;江津&quot;, &quot;address&quot;: &quot;重庆市江津区南门路&quot;}], &quot;nickname&quot;: &quot;杨家将&quot;}                                                                 | 2018-09-04 08:53:35.6
+29468+00
+(2 rows)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>JSON</h1>
+<ul>
+<li>动态schema</li>
+<li>不用再定义 <code>col1</code>，<code>col2</code>，<code>col3</code> 这样无意义的字段</li>
+</ul>
+<h3>通过 <code>-&gt;&gt;</code> 操作符根据 <strong>username</strong> 查询</h3>
+<pre><code class="sql">massdata=&gt; select id, username, attrs from t_user where attrs-&gt;&gt;&#39;nickname&#39; = &#39;杨景&#39;;
+ id | username |              attrs              
+----+----------+---------------------------------
+  2 | yangjing | {&quot;age&quot;: 32, &quot;nickname&quot;: &quot;杨景&quot;}
+(1 row)
+</code></pre>
+<h3>根据jsonb字段进行检索</h3>
+<pre><code class="sql">massdata=&gt; select id, username, attrs from t_user where attrs @&gt; &#39;{&quot;contacts&quot;:[{&quot;city&quot;:&quot;重庆&quot;}]}&#39;::jsonb;
+ id |  username  |                                                                               attrs
+  1 | yangbajing | {&quot;age&quot;: 32, &quot;email&quot;: &quot;yangbajing@gmail.com&quot;, &quot;contacts&quot;: [{&quot;city&quot;: &quot;重庆&quot;, &quot;address&quot;: &quot;渝北区金开大道西段106号10栋移动新媒体产业大厦11楼&quot;}], &quot;nickname&quot;: &quot;羊八井&quot;}
+(1 row)
+
+massdata=&gt; select id, username, attrs from t_user where attrs @&gt; &#39;{&quot;contacts&quot;:[{&quot;city&quot;:&quot;江津&quot;}]}&#39;::jsonb;
+ id |   username   |                                               attrs
+  3 | yangjiajiang | {&quot;age&quot;: 32, &quot;contacts&quot;: [{&quot;city&quot;: &quot;江津&quot;, &quot;address&quot;: &quot;重庆市江津区南门路&quot;}], &quot;nickname&quot;: &quot;杨家将&quot;}
+(1 row)
+
+massdata=&gt; select id, username, attrs from t_user where attrs-&gt;&#39;age&#39; = &#39;32&#39;::jsonb;
+ id |   username   |                                               attrs
+  2 | yangjing     | {&quot;age&quot;: 32, &quot;nickname&quot;: &quot;杨景&quot;}
+  3 | yangjiajiang | {&quot;age&quot;: 32, &quot;contacts&quot;: [{&quot;city&quot;: &quot;江津&quot;, &quot;address&quot;: &quot;重庆市江津区南门路&quot;}], &quot;nickname&quot;: &quot;杨家将&quot;}
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>JSON</h1>
+<h2>jsonb索引</h2>
+<ul>
+<li>GIN 索引可以被用来有效地搜索在大量jsonb文档（数据）中出现 的键或者键值对。提供了两种 GIN “操作符类”，它们在性能和灵活 性方面做出了不同的平衡。</li>
+</ul>
+<pre><code class="sql">create index t_user_attrs_idx ON t_user using gin(attrs);
+</code></pre>
+<ul>
+<li>jsonb操作符</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>操作符</th>
+<th>右操作数类型</th>
+<th>描述</th>
+<th>例子</th>
+<th>例子结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-&gt;</td>
+<td>int</td>
+<td>获得JSON 数组元素（索引从 0 开始，负整数结束）</td>
+<td>&#39;[{&quot;a&quot;:&quot;foo&quot;},{&quot;b&quot;:&quot;bar&quot;},{&quot;c&quot;:&quot;baz&quot;}]&#39;::json-&gt;2</td>
+<td>{&quot;c&quot;:&quot;baz&quot;}</td>
+</tr>
+<tr>
+<td>-&gt;</td>
+<td>text</td>
+<td>通过键获得JSON 对象域</td>
+<td>&#39;{&quot;a&quot;: {&quot;b&quot;:&quot;foo&quot;}}&#39;::json-&gt;&#39;a&#39;</td>
+<td>{&quot;b&quot;:&quot;foo&quot;}</td>
+</tr>
+<tr>
+<td>-&gt;&gt;</td>
+<td>int</td>
+<td>以文本形式获得JSON 数组元素</td>
+<td>&#39;[1,2,3]&#39;::json-&gt;&gt;2</td>
+<td>3</td>
+</tr>
+<tr>
+<td>-&gt;&gt;</td>
+<td>text</td>
+<td>以文本形式获得JSON 对象域</td>
+<td>&#39;{&quot;a&quot;:1,&quot;b&quot;:2}&#39;::json-&gt;&gt;&#39;b&#39;</td>
+<td>2</td>
+</tr>
+<tr>
+<td>#&gt;</td>
+<td>text[]</td>
+<td>获取在指定路径的JSON 对象</td>
+<td>&#39;{&quot;a&quot;: {&quot;b&quot;:{&quot;c&quot;: &quot;foo&quot;}}}&#39;::json#&gt;&#39;{a,b}&#39;</td>
+<td>{&quot;c&quot;: &quot;foo&quot;}</td>
+</tr>
+<tr>
+<td>#&gt;&gt;</td>
+<td>text[]</td>
+<td>以文本形式获取在指定路径的JSON 对象</td>
+<td>&#39;{&quot;a&quot;:[1,2,3],&quot;b&quot;:[4,5,6]}&#39;::json#&gt;&gt;&#39;{a,2}&#39;</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>JSON</h1>
+<h2>更多jsonb操作符</h2>
+<table border="1">
+    <thead>
+    <tr>
+        <th>操作符</th>
+        <th>右操作数类型</th>
+        <th>描述</th>
+        <th>例子</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><code class="literal">@&gt;</code></td>
+        <td><code class="type">jsonb</code></td>
+        <td>左边的 JSON 值是否包含顶层右边JSON路径/值项?</td>
+        <td><code class="literal">&#39;{&quot;a&quot;:1, &quot;b&quot;:2}&#39;::jsonb @&gt; &#39;{&quot;b&quot;:2}&#39;::jsonb</code></td>
+    </tr>
+    <tr>
+        <td><code class="literal">&lt;@</code></td>
+        <td><code class="type">jsonb</code></td>
+        <td>左边的JSON路径/值是否包含在顶层右边JSON值中？</td>
+        <td><code class="literal">&#39;{&quot;b&quot;:2}&#39;::jsonb &lt;@ &#39;{&quot;a&quot;:1, &quot;b&quot;:2}&#39;::jsonb</code></td>
+    </tr>
+    <tr>
+        <td><code class="literal">?</code></td>
+        <td><code class="type">text</code></td>
+        <td><span class="emphasis"><em>字符串</em></span>是否作为顶层键值存在于JSON值中？</td>
+        <td><code class="literal">&#39;{&quot;a&quot;:1, &quot;b&quot;:2}&#39;::jsonb ? &#39;b&#39;</code></td>
+    </tr>
+    <tr>
+        <td><code class="literal">?|</code></td>
+        <td><code class="type">text[]</code></td>
+        <td>这些数组<span class="emphasis"><em>字符串</em></span>中的任何一个是否作为顶层键值存在？</td>
+        <td><code class="literal">&#39;{&quot;a&quot;:1, &quot;b&quot;:2, &quot;c&quot;:3}&#39;::jsonb ?| array[&#39;b&#39;, &#39;c&#39;]</code></td>
+    </tr>
+    <tr>
+        <td><code class="literal">?&amp;</code></td>
+        <td><code class="type">text[]</code></td>
+        <td>这些数组<span class="emphasis"><em>字符串</em></span>是否作为顶层键值存在？</td>
+        <td><code class="literal">&#39;[&quot;a&quot;, &quot;b&quot;]&#39;::jsonb ?&amp; array[&#39;a&#39;, &#39;b&#39;]</code></td>
+    </tr>
+    <tr>
+        <td><code class="literal">||</code></td>
+        <td><code class="type">jsonb</code></td>
+        <td>连接两个<code class="type">jsonb</code>值到新的<code class="type">jsonb</code>值</td>
+        <td><code class="literal">&#39;[&quot;a&quot;, &quot;b&quot;]&#39;::jsonb || &#39;[&quot;c&quot;, &quot;d&quot;]&#39;::jsonb</code></td>
+    </tr>
+    <tr>
+        <td><code class="literal">-</code></td>
+        <td><code class="type">text</code></td>
+        <td>从左操作数中删除键/值对或<span class="emphasis"><em>字符串</em></span>元素。基于键值匹配键/值对。</td>
+        <td><code class="literal">&#39;{&quot;a&quot;: &quot;b&quot;}&#39;::jsonb - &#39;a&#39; </code></td>
+    </tr>
+    <tr>
+        <td><code class="literal">-</code></td>
+        <td><code class="type">text[]</code></td>
+        <td>从左操作数中删除多个键/值对或<span class="emphasis"><em>string</em></span>元素。
+            键/值对基于其键值进行匹配。
+        </td>
+        <td><code class="literal">&#39;{&quot;a&quot;: &quot;b&quot;, &quot;c&quot;: &quot;d&quot;}&#39;::jsonb - &#39;{a,c}&#39;::text[] </code></td>
+    </tr>
+    <tr>
+        <td><code class="literal">-</code></td>
+        <td><code class="type">integer</code></td>
+        <td>删除指定索引的数组元素（负整数结尾）。如果顶层容器不是一个数组，那么抛出错误。</td>
+        <td><code class="literal">&#39;[&quot;a&quot;, &quot;b&quot;]&#39;::jsonb - 1 </code></td>
+    </tr>
+    <tr>
+        <td><code class="literal">#-</code></td>
+        <td><code class="type">text[]</code></td>
+        <td>删除指定路径的域或元素（JSON数组，负整数结尾）</td>
+        <td><code class="literal">&#39;[&quot;a&quot;, {&quot;b&quot;:1}]&#39;::jsonb #- &#39;{1,b}&#39;</code></td>
+    </tr>
+    </tbody>
+</table>
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>hstore</h1>
+<ul>
+<li>hstore是Postgres的一个扩展，数据类型用来在一个单一PostgreSQL值中存储键值对。这在很多情景下都有用，例如带有很多很少被检查的属性的行或者半结构化数据。键和值都是简单的文本字符串。</li>
+<li>hstore的文本表示由零个或多个英文逗号来分隔<code>key=&gt;value</code>对：</li>
+</ul>
+<pre><code class="sql">massdata=&gt; select &#39;a=&gt;1,a=&gt;2,b=&gt;null&#39;::hstore;
+       hstore
+---------------------
+ &quot;a&quot;=&gt;&quot;1&quot;, &quot;b&quot;=&gt;NULL
+(1 row)
+</code></pre>
+<ul>
+<li>hstore里key是唯一的，键值对之间或者<code>=&gt;</code>号周围的空白将被忽略。一个值可以是SQL <code>NULL</code>（不区分大小写）。</li>
+</ul>
+<h2>jsonb和hstore？</h2>
+<ul>
+<li>更推荐使用jsonb类型，JSON可表达的数据类型更丰富，可嵌套。</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>WITH查询（CTE，公共表表达式）</h1>
+<ul>
+<li>WITH提供了一种方式来书写在一个大型查询中使用的辅助语句。这些语句通常被称为公共表表达式或CTE，它们可以被看成是定义只在一个查询中存在的临时表。在WITH子句中的每一个辅助语句可以是一个SELECT、INSERT、UPDATE或DELETE，并且WITH子句本身也可以被附加到一个主语句，主语句也可以是SELECT、INSERT、UPDATE或DELETE。</li>
+</ul>
+<pre><code class="sql">WITH regional_sales AS (
+        SELECT region, SUM(amount) AS total_sales
+        FROM orders
+        GROUP BY region
+     ), top_regions AS (
+        SELECT region
+        FROM regional_sales
+        WHERE total_sales &gt; (SELECT SUM(total_sales)/10 FROM regional_sales)
+     )
+SELECT region,
+       product,
+       SUM(quantity) AS product_units,
+       SUM(amount) AS product_sales
+FROM orders
+WHERE region IN (SELECT region FROM top_regions)
+GROUP BY region, product;
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>WITH查询（CTE，公共表表达式）</h1>
+<h2>RECURSIVE 递归</h2>
+<ul>
+<li>计算1到100的整数和</li>
+</ul>
+<pre><code class="sql">massdata=&gt; WITH RECURSIVE t(n) AS (
+    VALUES (1)
+    UNION ALL
+    SELECT n+1 FROM t WHERE n &lt; 100
+    )
+massdata-&gt; SELECT sum(n) FROM t;
+ sum
+------
+ 5050
+(1 row)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>WITH查询（CTE，公共表表达式）</h1>
+<h2>找到某个组织的所有父组织</h2>
+<pre><code class="sql">massdata=&gt; select * from t_org;
+ id |      name      | parent
+----+----------------+--------
+  1 | 机级组织       |
+  2 | 市工商         |      1
+  3 | 市公安         |      1
+  4 | 市工商小微企部 |      2
+(4 rows)
+</code></pre>
+<pre><code class="sql">massdata=&gt; with recursive tree as (
+        select id, name, parent from t_org where id = 4
+            union all
+        select t_org.id, t_org.name, t_org.parent from t_org, tree where t_org.id = tree.parent
+        ) select id, name from tree offset 1;
+ id |   name
+----+----------
+  2 | 市工商
+  1 | 机级组织
+(2 rows)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>WITH查询（CTE，公共表表达式）</h1>
+<h2>将父组织转换成数组</h2>
+<pre><code class="sql">create or replace function array_reverse(anyarray) returns anyarray as $$
+select array(select $1 [ i ] from generate_subscripts($1, 1) as s(i) order by i desc);
+$$ language &#39;sql&#39; strict immutable;
+</code></pre>
+<pre><code class="sql">massdata=&gt; select array_reverse(array(with recursive tree as (
+        select id, name, parent from t_org where id = 4
+            union all
+            select t_org.id, t_org.name, t_org.parent from t_org, tree where t_org.id = tree.parent
+        ) select id from tree offset 1)) as parents;
+ parents
+---------
+ {1,2}
+(1 row)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>从修改的行中返回数据</h1>
+<ul>
+<li><code>INSERT</code>、<code>UPDATE</code>和<code>DELETE</code>命令都有支持可选的<code>RETURNING</code>子句，使用<code>RETURNING</code>可以避免执行额外的数据查询来收集数据。</li>
+<li>所允许的<code>RETURNING</code>子句的内容与<code>SELECT</code>命令的输出列表相同。它可以包含命令的目标表的列名，或者包含使用这些列的值表达式。一个常见的简写是<code>RETURNING *</code>，它按顺序选择目标表的所有列。</li>
+<li>以下语句允许我们获得插入的自增ID值，获取更新后的数据和获取已删除的数据：</li>
+</ul>
+<pre><code class="sql">insert into t_org (name, parent) values (&#39;市公安&#39;, 1) returning id;
+update t_org set name = &#39;市公安局&#39; where id = 3 returing *;
+delete from t_org where id = 3 returing *;
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>ON CONFLICT</h1>
+<ul>
+<li>使用<code>on conflict</code>可以在发生主键冲突时控制接下来的动作。我们可以选择更新已有数据，或者忽略本次操作。</li>
+</ul>
+<pre><code class="sql">massdata=&gt; insert into t_org (id, name, parent) values (3, &#39;市公安局&#39;, 1);
+ERROR:  duplicate key value violates unique constraint &quot;t_org_pkey&quot;
+DETAIL:  Key (id)=(3) already exists.
+</code></pre>
+<h2>insertOrUpdate</h2>
+<pre><code class="sql">massdata=&gt; insert into t_org (id, name, parent)
+        values (3, &#39;市公安局&#39;, 1)
+        on conflict (id) do update set name = EXCLUDED.name, parent = EXCLUDED.parent;
+INSERT 0 1
+</code></pre>
+<ul>
+<li>使用<code>on conflict(xxx) do</code>特性，必需指定（复合）主键。</li>
+<li>可以使用<code>on conflict(xxx) do nothing</code>在主键冲突时进行忽略（不返回错误也不更新数据）。</li>
+<li>批量插入语句也可以使用<code>on conflict(xxx) do</code>特性。</li>
+</ul>
+<pre><code class="sql">insert into t_org (id, name, parent)
+values (3, &#39;市公安局&#39;, 1), (4, &#39;市工商局小微企部&#39;, 2), (5, &#39;市体育局&#39;, 1)
+on conflict (id) do update set name = EXCLUDED.name, parent = EXCLUDED.parent;
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>FDW</h1>
+<h2>访问其它PostgreSQL数据库</h2>
+<ol>
+<li>使用<code>CREATE EXTENSION</code>来安装<strong>postgres_fdw</strong>扩展。</li>
+<li>使用<code>CREATE SERVER</code>创建一个外部服务器对象，它用来表示你想连接的每一个远程数据库。指定除了<code>user</code>和<code>password</code>之外的连接信息作为该服务器对象的选项。</li>
+<li>使用<code>CREATE USER MAPPING</code>创建一个用户映射，每一个用户映射都代表你想允许一个数据库用户访问一个外部服务器。指定远程用户名和口令作为用户映射的<code>user</code>和<code>password</code>选项。</li>
+<li>为每一个你想访问的远程表使用<code>CREATE FOREIGN TABLE</code>或者<code>IMPORT FOREIGN SCHEMA</code>创建一个外部表。外部表的列必须匹配被引用的远程表。但是，如果你在外部表对象的选项中指定了正确的远程名称，你可以使用不同于远程表的表名和/或列名。</li>
+</ol>
+<h2>启动第二个PostgreSQL数据库</h2>
+<pre><code class="bash">$ docker run -h postgres-10-dev2 --link=postgres-10-dev --name=postgres-10-dev2 -d postgres-10-dev
+$ docker run -it --rm --link=postgres-10-dev2 postgres-10-dev psql -h postgres-10-dev2 -U postgres -d massdata
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>FDW</h1>
+<h2>访问其它PostgreSQL数据库</h2>
+<pre><code class="sql">massdata=# create extension postgres_fdw ;
+CREATE EXTENSION
+massdata=# create server foreign_server foreign data wrapper postgres_fdw options (host &#39;postgres-10-dev&#39;, port &#39;5432&#39;, dbname &#39;massdata&#39;);
+CREATE SERVER
+massdata=#  create user MAPPING FOR postgres server foreign_server options (user &#39;postgres&#39;, password &#39;postgres&#39;);
+CREATE USER MAPPING
+massdata=# create foreign table ft_org(
+          id     int          not null,
+          name   varchar(128) not null,
+          parent int          null
+        ) server foreign_server options(schema_name &#39;public&#39;, table_name &#39;t_org&#39;);
+CREATE FOREIGN TABLE
+massdata=# select * from ft_org ;
+ id |      name      | parent
+----+----------------+--------
+  1 | 市级组织        |
+  2 | 市工商          |      1
+  3 | 市公安          |      1
+  4 | 市工商小微企部   |      2
+(4 rows)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>FDW</h1>
+<h2>访问其它PostgreSQL数据库</h2>
+<pre><code class="sql">massdata=# \d ft_org
+                         Foreign table &quot;public.ft_org&quot;
+ Column |          Type          | Collation | Nullable | Default | FDW options
+--------+------------------------+-----------+----------+---------+-------------
+ id     | integer                |           | not null |         |
+ name   | character varying(128) |           | not null |         |
+ parent | integer                |           |          |         |
+Server: foreign_server
+FDW options: (schema_name &#39;public&#39;, table_name &#39;t_org&#39;)
+</code></pre>
+<ul>
+<li><strong>postgres_fdw</strong>覆盖了较老的dblink模块，提供了更透明且兼容标准的语法来访问远程表，并拥有更好的性能。</li>
+<li>可以使用<code>select</code>、<code>insert</code>、<code>update</code>和<code>delete</code>操作远程表。</li>
+<li><code>insert</code>语句支持<code>on conflict do nothing</code>，但不支持<code>on conflict do update</code>。</li>
+<li>建议外部表的列被声明为与被无用的远程表列完全相同的数据类型和排序规则（如果需要）。</li>
+<li>与远程表的列匹配是通过名字而不是位置进行的。</li>
+<li>更多内容：<a href="http://www.postgres.cn/docs/10/postgres-fdw.html" target="_blank">http://www.postgres.cn/docs/10/postgres-fdw.html</a></li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>FDW</h1>
+<h2>访问MySQL数据库</h2>
+<ul>
+<li><a href="https://github.com/EnterpriseDB/mysql_fdw" target="_blank">PostgreSQL foregin data wrapper for MySQL</a></li>
+</ul>
+<h2>MySQL Dockerfile</h2>
+<pre><code class="dockerfile">FROM mysql:5.7
+
+ENV LANG zh_CN.utf8
+ENV TZ Asia/Shanghai
+
+COPY init.sql /docker-entrypoint-initdb.d/
+</code></pre>
+<pre><code class="bash">$ docker build -t mysql-5.7-dev .
+$ docker run -p 3306:3306 --name=mysql-5.7-dev -h mysql-5.7-dev -e MYSQL_ROOT_PASSWORD=Mysql.2018 -d mysql-5.7-dev
+$ docker run --rm -it --link=mysql-5.7-dev mysql-5.7-dev mysql -h mysql-5.7-dev -D massdata -u massdata -pMassdata.2018
+</code></pre>
+<pre><code class="sql">mysql&gt; insert into test(name, created_at) values (&#39;MySQL&#39;, now()), (&#39;PostgreSQL&#39;, now());
+Query OK, 2 rows affected (0.06 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>FDW</h1>
+<h2>访问MySQL数据库</h2>
+<ul>
+<li>启动一个支持<code>mysql_fdw</code>扩展的PostgreSQL数据库</li>
+</ul>
+<pre><code class="bash">$ docker run --name=pgsql-fdq-mysql -h pgsql-fdq-mysql --link=mysql-5.7-dev -d geographica/postgis-fdw-mysql
+$ docker run -it --rm --link=pgsql-fdq-mysql geographica/postgis-fdw-mysql psql -h pgsql-fdq-mysql -U postgres  # 密码：postgres
+</code></pre>
+<pre><code class="sql">postgres@pgsql-fdq-mysql ~&gt; create extension mysql_fdw;
+postgres@pgsql-fdq-mysql ~&gt; create server mysql_server foreign data wrapper mysql_fdw options(host &#39;mysql-5.7-dev&#39;, port &#39;3306&#39;);
+postgres@pgsql-fdq-mysql ~&gt; create user mapping for postgres server mysql_server options(username &#39;massdata&#39;, password &#39;Massdata.2018&#39;);
+postgres@pgsql-fdq-mysql ~&gt; create foreign table ft_test(
+          id bigint not null,
+          name       varchar(255),
+          created_at timestamp
+        ) server mysql_server options(dbname &#39;massdata&#39;, table_name &#39;test&#39;);
+postgres@pgsql-fdq-mysql ~&gt; select * from ft_test;
+ id |    name    |     created_at
+----+------------+---------------------
+  1 | MySQL      | 2018-09-05 02:07:17
+  2 | PostgreSQL | 2018-09-05 02:07:17
+(2 rows)
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>FDW</h1>
+<h2>访问MySQL数据库</h2>
+<ul>
+<li><code>mysql_fdw</code>支持PostgreSQL 9.3, 9.4, 9.5, 9.6, 10。</li>
+<li>支持连接到MySQL、MariaDB</li>
+<li><strong>支持读写</strong></li>
+<li><strong>连接池</strong>：使用连接池优化与MySQL数据库的连接。</li>
+<li><strong>where子句下推</strong>：支持将where子句下推到外部服务器上执行，只传递需要的数据行到PostgreSQL。</li>
+<li><strong>column下推</strong>：支持在外部服务器筛选需要的列后再将数据传递到PostgreSQL。</li>
+<li><strong>预编译语句</strong></li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>表分区</h1>
+<ul>
+<li>表分区是将逻辑上的一个大表分成一些小的物理上的片，表分区有很多优势：</li>
+</ul>
+<ol>
+<li>在某些情况下可显著提升查询性能。</li>
+<li>很少使用的数据可以被迁移到便宜且较慢的存储介质上。</li>
+</ol>
+<ul>
+<li>PostgreSQL内置支持两种分区形式：</li>
+</ul>
+<ol>
+<li><strong>范围分区</strong>：该表被分区到由键列或列集定义的“范围”中，分配给不同分区的值范围之间没有重叠。例如，可以按日期范围进行分区，也可以按特定业务对象的标识符范围进行分区。</li>
+<li><strong>列表分区</strong>：表通过明确列出每个分区中出现的键值进行分区。</li>
+</ol>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>Backup</h1>
+<p>TODO</p>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>Recovery</h1>
+<p>TODO</p>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>JDBC</h1>
+<p>TODO</p>
+
+</article></section></slide>
+        
+
+        <!-- <slide class="slide logoslide dark nobackground">
+            <article class="flexbox vcenter">
+                <h2 style="color: white;">Powered By nodeppt v1.4.5</h2>
+            </article>
+        </slide> -->
+        <div class="slideTip" id="tip"></div>
+    </slides>
+</div>
+<canvas id="drawBoard" class="draw-board" width="900" height="700"></canvas>
+<div class="progress"><span id="progress"></span></div>
+<div id="_buttons">
+    <div class="_btn-box" id="_btn-box" style="display:none;">
+        <button class="fa fa-arrow-circle-left" id="_btn-prev"></button>
+        <button class="fa fa-arrow-circle-right" id="_btn-next"></button>
+        <button class="fa fa-paint-brush" id="_btn-brush"></button>
+        <button class="fa fa-compress" id="_btn-overview" data-toggle="fa fa-expand"></button>
+    </div>
+    <button class="fa fa-bars" id="_btn-bar"  data-toggle="fa fa-close"></button>
+</div>
+<script src="./js/mixjs/lib/mix.0.3.0.min.js"></script>
+<script>
+    var ASSET_RELATIVE_DIR = ".";
+</script>
+<script>
+var base = location.protocol + '//' + location.host;
+
+var path = (location.pathname + '#').split('/').filter(function(v){
+    return !!v;
+});
+path.pop();
+path = path.join('/');
+if (typeof ASSET_RELATIVE_DIR === 'string') {
+    path = path + '/' + ASSET_RELATIVE_DIR;
+}
+MixJS.config({
+    baseURL: [ base, path, 'js'].join('/')+'/'
+});
+
+</script>
+<script src="./js/mixjs/lib/event/broadcast.js"></script>
+<script src="./js/nodeppt.js"></script>
+<script>
+Slide.init({
+    containerID: 'container',
+    drawBoardID: 'drawBoard',
+    slideClass: '.slide',
+    buildClass: '.build',
+    progressID: 'progress',
+    transition: 'move',
+    width: 1100,
+    dir: './',
+    
+    //打开下面的注释就开启postMessage方式
+    //访问网址127.0.0.1:8080/ppt/demo#client
+    control:{
+        type: 'postMessage',
+        args:{
+            isControl:  false
+        }
+    },
+    
+    tipID: 'tip'
+});
+MixJS.loadJS('highlight/highlight.pack.js',function(){
+    hljs.tabReplace = '  ';
+    hljs.initHighlightingOnLoad();
+});
+</script>
+<link rel="stylesheet" href="./css/moon.css">
+/img
+
+<!--placeholder-->
+</body>
+</html>
