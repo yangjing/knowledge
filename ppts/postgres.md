@@ -6,7 +6,7 @@ files: /css/moon.css,/img
 [slide]
 
 # 使用PostgreSQL
-## 分享人：杨景
+<p style="text-align:right">分享人：杨景</p>
 
 [slide]
 
@@ -158,7 +158,7 @@ select '<foo>bar</foo>'::xml;
 - Docker脚本，设置系统默认字符集为`zh_CN.UTF-8`
 
 ```dockerfile
-FROM postgres:10.4
+FROM postgres:10.5
 
 RUN localedef -i zh_CN -c -f UTF-8 -A /usr/share/locale/locale.alias zh_CN.UTF-8
 
@@ -816,32 +816,309 @@ postgres@pgsql-fdq-mysql ~> select * from ft_test;
 
 # 表分区
 
-- 表分区是将逻辑上的一个大表分成一些小的物理上的片，表分区有很多优势：
+- 表分区是将逻辑上的一个大表分成一些小的物理上的片
+
+## 优势：
 
 1. 在某些情况下可显著提升查询性能。
+0. 当查询或更新访问一个分区的大部分行时，可以通过该分区上的一个顺序扫描来取代分散到整个表上的索引和随机访问，这样可以改善性能。
+0. 如果需求计划使用划分设计，可以通过增加或移除分区来完成批量载入和删除。执行`ALTER TABLE DETACH PARTITION`或者使用`DROP TABLE`删除一个单独的分区都远快于一个批量操作。这些命令也完全避免了由批量`DELETE`造成的**VACUUM**负载。
 0. 很少使用的数据可以被迁移到便宜且较慢的存储介质上。
 
-- PostgreSQL内置支持两种分区形式：
+## Note:
+
+* 当一个表非常大时，划分所带来的好处是非常值得的。一个表何种情况下会从划分获益取决于应用，一个经验法则是当表的尺寸超过了数据库服务器物理内存时，划分会为表带来好处。
+* 分区可以有自己的索引、约束和默认值，与其他分区不同。 索引必须为每个分区单独创建。
+* 分区的分区键范围不能重叠。
+
+## 分区形式：
 
 1. **范围分区**：该表被分区到由键列或列集定义的“范围”中，分配给不同分区的值范围之间没有重叠。例如，可以按日期范围进行分区，也可以按特定业务对象的标识符范围进行分区。
 0. **列表分区**：表通过明确列出每个分区中出现的键值进行分区。
 
 [slide]
 
+# 表分区
+
+## 范围分区
+
+创建分区表和子表：
+
+```sql
+create table t_log(
+  id uuid not null,
+  content text not null,
+  created_at timestamp not null
+) partition by range(created_at);
+
+create table t_log_his    partition of t_log for values from ('1970-01-01') to ('2018-01-01');
+create table t_log_201801 partition of t_log for values from ('2018-01-01') to ('2018-02-01');
+create table t_log_201802 partition of t_log for values from ('2018-02-01') to ('2018-03-01');
+create table t_log_201803 partition of t_log for values from ('2018-03-01') to ('2018-04-01');
+```
+
+插入数据：
+
+```sql
+insert into t_log(id, content, created_at) values
+(uuid_generate_v4(), 'TRACE', '2017-12-11'),
+(uuid_generate_v4(), 'DEBUG', '2018-01-11'),
+(uuid_generate_v4(), 'INFO', '2018-02-11'),
+(uuid_generate_v4(), 'WARN', '2018-03-11');
+```
+
+[slide]
+
+# 表分区
+
+## 范围分区
+
+插入分区范围之外的数据会报错：
+
+```sql
+massdata=> insert into t_log(id, content, created_at) values (uuid_generate_v4(), 'ERROR', '2018-04-11');
+ERROR:  no partition of relation "t_log" found for row
+DETAIL:  Partition key of the failing row contains (created_at) = (2018-04-11 00:00:00).
+```
+
+通过`explain`显示执行计划，可以看到分别从4张子表内获取的数据：
+
+```sql
+massdata=> explain select * from t_log;
+                              QUERY PLAN
+----------------------------------------------------------------------
+ Append  (cost=0.00..78.80 rows=3880 width=56)
+   ->  Seq Scan on t_log_201801  (cost=0.00..19.70 rows=970 width=56)
+   ->  Seq Scan on t_log_201802  (cost=0.00..19.70 rows=970 width=56)
+   ->  Seq Scan on t_log_201803  (cost=0.00..19.70 rows=970 width=56)
+   ->  Seq Scan on t_log_his  (cost=0.00..19.70 rows=970 width=56)
+(5 rows)
+```
+
+[slide]
+
+# 表分区
+
+## 添加分区
+
+- 增加一个分区
+
+```sql
+create table t_log_201804 partition of t_log for values from ('2018-04-01') to ('2018-05-01');
+```
+
+- 附加分区
+
+```sql
+alter table t_log attach partition t_log_201804 for values from ('2018-04-01') to ('2018-05-01');
+```
+
+## 删除分区
+
+- 直接删除分区
+
+```sql
+drop table t_log_201804;
+```
+
+- 分离分区
+
+```sql
+alter table t_log detach partition t_log_201804;
+```
+
+[slide]
+
+# 表分区
+
+```sql
+massdata=> \d+ t_log;
+                                              Table "public.t_log"
+   Column   |           Type           | Collation | Nullable | Default | Storage  | Stats target | Description
+------------+--------------------------+-----------+----------+---------+----------+--------------+-------------
+ id         | uuid                     |           | not null |         | plain    |              |
+ content    | text                     |           | not null |         | extended |              |
+ created_at | timestamp with time zone |           | not null |         | plain    |              |
+Partition key: RANGE (created_at)
+Partitions: t_log_201801 FOR VALUES FROM ('2018-01-01 00:00:00+00') TO ('2018-02-01 00:00:00+00'),
+            t_log_201802 FOR VALUES FROM ('2018-02-01 00:00:00+00') TO ('2018-03-01 00:00:00+00'),
+            t_log_201803 FOR VALUES FROM ('2018-03-01 00:00:00+00') TO ('2018-04-01 00:00:00+00'),
+            t_log_his FOR VALUES FROM ('1970-01-01 00:00:00+00') TO ('2018-01-01 00:00:00+00')
+```
+
+*虽然在PG里存储日志不是一个好的设计，但使用分区表来进行日志存储也不失为一个可行的方案。*
+
+[slide]
+
 # Backup
 
-TODO
+任务系统都有崩溃的可能，数据库备份工作的重要性毋庸置疑。
+
+## 支持的备份方式
+
+- 增量备份：WAL归档日志。
+- SQL转储：`pg_dump`、`pg_dumpall`。
+- 文件系统备份：停机冷备，直接将数据目录打包进行备份。
+
+[slide]
+
+# Backup
+
+## `pg_dump`
+
+- 文本格式备份
+
+```bash
+pg_dump -Fp -c --insert --column-inserts massdata > massdata.sql
+```
+
+*当使用文本格式并导出为insert插入语句时，应同时指定`--column-inserts`参数来明确指定列的名称，不然当字段顺序变化或有新的列时可能不能正确恢复数据*
+
+- 自定义格式备份
+
+```bash
+pg_dump -Fc -c massdata > massdata.dat
+```
 
 [slide]
 
 # Recovery
 
-TODO
+## 文本格式恢复
+
+```bash
+psql -h localhost -U massdata -d massdata < massdata.sql
+```
+
+## 自定义格式恢复
+
+```bash
+pg_restore -h localhost -U massdata -d massdata massdata.dat
+```
 
 [slide]
 
 # JDBC
 
-TODO
+PostgreSQL支持JDBC 4协议，JDBC URL连接示例如下：
 
+```
+jdbc:postgresql://host:port/database
+```
+
+- 通过Properties获取连接
+
+```java
+String url = "jdbc:postgresql://localhost/massdata";
+Properties props = new Properties();
+props.setProperty("user","massdata");
+props.setProperty("password","Massdata.2018");
+props.setProperty("ssl","true");
+Connection conn = DriverManager.getConnection(url, props);
+```
+
+- 通过JDBC URL获取连接
+
+```java
+String url = "jdbc:postgresql://localhost/massdata?user=massdata&password=Massdata.2018&ssl=true";
+Connection conn = DriverManager.getConnection(url);
+```
+
+- Spring Boot中配置PostgreSQL数据源
+
+```
+spring.datasource.name=main
+spring.datasource.type=com.zaxxer.hikari.HikariDataSource
+spring.datasource.jdbc-url=jdbc:postgresql://localhost:5432/massdata
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.username=massdata
+spring.datasource.password=Massdata.2018
+```
+
+[slide]
+
+# JDBC
+## 数据类型
+
+| Java Type | Default PostgreSQL™ Type |
+|-----------|--------------------------|
+| short     | int2   |
+| int       | int4   |
+| long      | int8   |
+| float     | float4   |
+| double    | float8   |
+| boolean   | bool   |
+| String    | varchar, text   |
+| java.sql.Time | time [ without time zone ] |
+| java.sql.Date | date |
+| java.sql.timestamp | timestamp [ without time zone ] |
+| byte[]  | bytea |
+
+[slide]
+
+# JDBC
+# 使用Java 8日期和时间类型
+
+*需要使用JDBC 4.2才支持*
+
+| PostgreSQL™                     | Java SE 8      |
+|---------------------------------|----------------|
+| DATE	                          | LocalDate      |
+| TIME [ WITHOUT TIME ZONE ]      | LocalTime      |
+| TIMESTAMP [ WITHOUT TIME ZONE ] | LocalDateTime  |
+| TIMESTAMP WITH TIME ZONE        | OffsetDateTime |
+
+读
+
+```java
+Statement st = conn.createStatement();
+ResultSet rs = st.executeQuery("SELECT * FROM mytable WHERE columnfoo = 500");
+while (rs.next())
+{
+    System.out.print("Column 1 returned ");
+    LocalDate localDate = rs.getObject(1, LocalDate.class));
+    System.out.println(localDate);
+}
+rs.close();
+st.close();
+```
+
+写
+
+```java
+LocalDate localDate = LocalDate.now();
+PreparedStatement st = conn.prepareStatement("INSERT INTO mytable (columnfoo) VALUES (?)");
+st.setObject(1, localDate);
+st.executeUpdate();
+st.close();
+```
+
+[slide]
+
+# JDBC
+## 数组
+
+PostgresQL提供了两种使用数组类型的方式。
+
+- 通过`java.sql.Connection.createArrayOf(String, Object[])` 创建对象数组，使用`PreparedStatement.setArray(int, Array)`设置值。
+- 通过`PreparedStatement.setObject`方法直接设置数组，支持以下Java数组的自动映射：
+
+| Java Type | Default PostgreSQL™ Type |
+|-----------|--------------------------|
+| short[]   | int2[] |
+| int[]     | int4[] |
+| long[]    | int8[] |
+| float[]   | float4[] |
+| double[]  | float8[] |
+| boolean[] | bool[] |
+| String[]  | varchar[] |
+
+[slide]
+
+# Answer
+
+<p style="text-align:right">羊八井</p>
+<p style="text-align:right">www.yangbajing.me</p>
+<p style="text-align:right">weibo.com/yangbajing</p>
+<p style="text-align:right">yangbajing at gmail com</p>
 

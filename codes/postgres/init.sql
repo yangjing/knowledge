@@ -5,4 +5,4 @@ create database massdata owner = massdata template = template0 encoding = 'UTF-8
 \c massdata;
 create extension adminpack;
 create extension hstore;
-
+create extension "uuid-ossp";
