@@ -17,7 +17,7 @@ files: /css/moon.css,/img
 - **Stream**
 - **方法引用**
 - **高阶函数**
-- **ComplatableStage的组合**
+- **CompletableFuture的组合**
 - **Scala的函数式特性**
 
 [slide]
