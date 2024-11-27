@@ -1,0 +1,8 @@
+GET         /assets/*file                                   controllers.Assets.at(path="/public", file)
+
+GET         /                                               controllers.PageController.index
+
+->          /api                                            api.Routes
+->          /admin                                          admin.Routes
+->          /sdk                                            sdk.Routes
+->          /vendor                                         vendor.Routes

@@ -1,0 +1,1 @@
+-Dpidfile.path=/dev/null -Dhttp.port=59000 -Dfile.encoding=UTF-8 -Dconfig.file=/etc/share2016-scala/application.conf

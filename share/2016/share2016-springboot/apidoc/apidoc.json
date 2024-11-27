@@ -1,0 +1,20 @@
+{
+  "name": "TodoList",
+  "version": "0.0.1",
+  "description": "誉存科技2016-05-07技术交流会：Spring Boot apiDoc",
+  "title": "誉存科技2016-05-07技术交流会：Spring Boot apiDoc",
+  "url": "https://localhost:8080",
+  "sampleUrl": "http://localhost:8080",
+  "header": {
+    "title": "说明",
+    "filename": "header.md"
+  },
+  "footer": {
+    "title": "总结",
+    "filename": "footer.md"
+  },
+  "template": {
+    "withCompare": true,
+    "withGenerator": true
+  }
+}
