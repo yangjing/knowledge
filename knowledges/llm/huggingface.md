@@ -20,7 +20,8 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 
 ```shell
 huggingface-cli download Qwen/Qwen3-Embedding-0.6B-GGUF --include Qwen3-Embedding-0.6B-Q8_0.gguf
-# huggingface-cli download Qwen/Qwen3-Embedding-4B-GGUF --include Qwen3-Embedding-4B-Q4_K_M.gguf
+# 下载 Qwen3-Embedding-4B-Q4_K_M.gguf
+#huggingface-cli download Qwen/Qwen3-Embedding-4B-GGUF --include Qwen3-Embedding-4B-Q4_K_M.gguf
 ```
 
 ## 创建 Ollama 模型
@@ -36,6 +37,7 @@ FROM Qwen3-Embedding-0.6B-Q8_0.gguf
 
 ```shell
 ollama create Qwen/Qwen3-Embedding-0.6B -f Modelfile
+#ollama create Qwen/Qwen3-Embedding-4B -f Modelfile
 ```
 
 测试嵌入模型：

@@ -1,5 +1,8 @@
 # Vchord 问题
 
+- <https://docs.vectorchord.ai/>
+- <https://github.com/tensorchord/VectorChord>
+
 # 索引选项：`lists` 和 `probes`
 
 为什么将 vchordrq 索引的 `lists` 参数从 `[1024]` 改为 `[]` 后，SQLModel 查询就成功了。我需要分析 VectorChord 索引配置参数的含义，特别是 `lists` 参数对查询执行的影响。
