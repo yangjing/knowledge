@@ -19,25 +19,27 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 下载模型
 
 ```shell
-huggingface-cli download Qwen/Qwen3-Embedding-0.6B-GGUF --include Qwen3-Embedding-0.6B-Q8_0.gguf
+hf download Qwen/Qwen3-Embedding-0.6B-GGUF --include Qwen3-Embedding-0.6B-Q8_0.gguf
 # 下载 Qwen3-Embedding-4B-Q4_K_M.gguf
-#huggingface-cli download Qwen/Qwen3-Embedding-4B-GGUF --include Qwen3-Embedding-4B-Q4_K_M.gguf
+#hf download Qwen/Qwen3-Embedding-4B-GGUF --include Qwen3-Embedding-4B-Q4_K_M.gguf
 ```
 
 ## 创建 Ollama 模型
 
-在 `Qwen3-Embedding-0.6B-Q8_0.gguf` 相同目录创建 `Modelfile` 文件，内容如下：
+在 `Qwen3-Embedding-4B-Q4_K_M.gguf` 相同目录创建 `Modelfile` 文件，内容如下：
 
 ```dockerfile
 # 模型文件路径（与 Modelfile 同目录）
-FROM Qwen3-Embedding-0.6B-Q8_0.gguf
+FROM Qwen3-Embedding-4B-Q4_K_M.gguf
 ```
+
+> 目录路径示例： `/Users/yangjing/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be`
 
 通过 `ollama create` 命令创建并导入模型：
 
 ```shell
-ollama create Qwen/Qwen3-Embedding-0.6B -f Modelfile
-#ollama create Qwen/Qwen3-Embedding-4B -f Modelfile
+#ollama create Qwen/Qwen3-Embedding-0.6B -f Modelfile
+ollama create Qwen/Qwen3-Embedding-4B -f Modelfile
 ```
 
 测试嵌入模型：
@@ -46,7 +48,7 @@ ollama create Qwen/Qwen3-Embedding-0.6B -f Modelfile
 curl http://localhost:11434/api/embed \
   -X POST \
   -d '{
-        "model": "qwen3-embedding:0.6b",
+        "model": "Qwen/Qwen3-Embedding-4B",
         "input": ["The quick brown fox jumps over the lazy dog."]
       }'
 ```
