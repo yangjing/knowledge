@@ -1,21 +1,22 @@
-
 # Mathematics for Machine Learning
 
 A collection of resources to learn and review mathematics for machine learning.
+
+[数学学习计划](math-learning-plan.md)
 
 # :book: Books
 
 ### Algebra, Topology, Differential Calculus, and Optimization Theory For Computer Science and Machine Learning
 *by Jean Gallier and Jocelyn Quaintance*
 
-Includes mathematical concepts for machine learning and computer science. 
+Includes mathematical concepts for machine learning and computer science.
 
 Book: https://www.cis.upenn.edu/~jean/math-deep.pdf
 
 ### Applied Math and Machine Learning Basics
 *by Ian Goodfellow and Yoshua Bengio and Aaron Courville*
 
-This includes the math basics for deep learning from the [Deep Learning](https://www.deeplearningbook.org/) book. 
+This includes the math basics for deep learning from the [Deep Learning](https://www.deeplearningbook.org/) book.
 
 Chapter: https://www.deeplearningbook.org/contents/part_basics.html
 
@@ -29,7 +30,7 @@ Book: https://mml-book.github.io
 ### Probabilistic Machine Learning: An Introduction
 *by Kevin Patrick Murphy*
 
-This book contains a comprehensive overview of classical machine learning methods and the principles explaining them. 
+This book contains a comprehensive overview of classical machine learning methods and the principles explaining them.
 
 Book: https://probml.github.io/pml-book/book1.html
 
@@ -38,7 +39,7 @@ Book: https://probml.github.io/pml-book/book1.html
 
 This reference contains some mathematical concepts to help build a better understanding of deep learning.
 
-Chapter: https://d2l.ai/chapter_appendix-mathematics-for-deep-learning/index.html 
+Chapter: https://d2l.ai/chapter_appendix-mathematics-for-deep-learning/index.html
 
 ### The Mathematical Engineering of Deep Learning
 *by Benoit Liquet, Sarat Moka and Yoni Nazarathy*
@@ -50,7 +51,7 @@ Book: https://deeplearningmath.org
 ### Bayes Rules! An Introduction to Applied Bayesian Modeling
 *by Alicia A. Johnson, Miles Q. Ott, Mine Dogucu*
 
-Great online book covering Bayesian approaches. 
+Great online book covering Bayesian approaches.
 
 Book: https://www.bayesrulesbook.com/index.html
 
@@ -89,7 +90,7 @@ Video Playlist: https://www.youtube.com/playlist?list=PLiiljHvN6z1_o1ztXTKWPrShr
 ### CS229: Machine Learning
 *by Anand Avati*
 
-Lectures containing mathematical explanations to many concepts in machine learning. 
+Lectures containing mathematical explanations to many concepts in machine learning.
 
 Course: https://www.youtube.com/playlist?list=PLoROMvodv4rNH7qL6-efu_q2_bPuy0adh
 
@@ -129,7 +130,7 @@ Course: https://www.khanacademy.org/math/statistics-probability
 ### Linear Algebra Done Right
 *by Sheldon Axler*
 
-Slides and video lectures on the popular linear algebra book Linear Algebra Done Right. 
+Slides and video lectures on the popular linear algebra book Linear Algebra Done Right.
 
 Lecture and Slides: https://linear.axler.net/LADRvideos.html
 
@@ -149,4 +150,3 @@ Course: https://www.khanacademy.org/math/calculus-home
 
 ---
 This collection is far from exhaustive but it should provide a good foundation to start learning some of the mathematical concepts used in machine learning. Reach out on [Twitter](https://twitter.com/omarsar0) if you have any questions.
-
